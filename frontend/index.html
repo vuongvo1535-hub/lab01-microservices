@@ -1,0 +1,218 @@
+
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Lab 01 - Microservices</title>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f6f9;
+            margin: 0;
+            padding: 30px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: auto;
+        }
+
+        h1 {
+            text-align: center;
+            color: #263238;
+        }
+
+        .box {
+            background-color: white;
+            padding: 25px;
+            margin-top: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+
+        h2 {
+            color: #1976d2;
+        }
+
+        button {
+            background-color: #1976d2;
+            color: white;
+            padding: 10px 18px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #125ca1;
+        }
+
+        input {
+            padding: 10px;
+            width: 220px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+
+        li {
+            padding: 8px;
+            border-bottom: 1px solid #eee;
+        }
+
+        pre {
+            background-color: #f1f1f1;
+            padding: 15px;
+            border-radius: 5px;
+            white-space: pre-wrap;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container">
+
+        <h1>QUẢN LÝ SẢN PHẨM - MICROSERVICES</h1>
+
+        <!-- Danh sách sản phẩm -->
+        <div class="box">
+
+            <h2>Danh sách sản phẩm</h2>
+
+            <button onclick="loadProducts()">
+                Tải danh sách sản phẩm
+            </button>
+
+            <ul id="productList">
+                Chưa tải danh sách sản phẩm
+            </ul>
+
+        </div>
+
+        <!-- Tìm kiếm sản phẩm -->
+        <div class="box">
+
+            <h2>Tìm sản phẩm thông qua Order Service</h2>
+
+            <input
+                type="number"
+                id="productId"
+                placeholder="Nhập ID sản phẩm"
+                min="1"
+            >
+
+            <button onclick="findProduct()">
+                Tìm sản phẩm
+            </button>
+
+            <pre id="result">Kết quả tìm kiếm sẽ hiển thị tại đây</pre>
+
+        </div>
+
+    </div>
+
+    <script>
+
+        // Hàm lấy danh sách sản phẩm từ Product Service
+        async function loadProducts() {
+
+            try {
+
+                const response = await fetch(
+                    "http://localhost:8081/api/products"
+                );
+
+                if (!response.ok) {
+                    throw new Error("Không thể tải danh sách sản phẩm");
+                }
+
+                const products = await response.json();
+
+                const list = document.getElementById("productList");
+
+                list.innerHTML = "";
+
+                if (products.length === 0) {
+
+                    list.textContent = "Chưa có sản phẩm";
+
+                    return;
+                }
+
+                products.forEach(product => {
+
+                    const li = document.createElement("li");
+
+                    li.textContent =
+                        `${product.id} - ${product.name} - ${product.price} VNĐ`;
+
+                    list.appendChild(li);
+
+                });
+
+            } catch (error) {
+
+                document.getElementById("productList").textContent =
+                    "Lỗi: " + error.message;
+
+            }
+
+        }
+
+
+        // Hàm tìm sản phẩm thông qua Order Service
+        async function findProduct() {
+
+            const id = document.getElementById("productId").value;
+
+            const result = document.getElementById("result");
+
+            // Kiểm tra ID
+            if (!id || !Number.isInteger(Number(id)) || Number(id) < 1) {
+
+                result.textContent = "Vui lòng nhập ID hợp lệ";
+
+                return;
+            }
+
+            try {
+
+                const response = await fetch(
+                    `http://localhost:8082/api/orders/product/${id}`
+                );
+
+                // Không tìm thấy sản phẩm
+                if (response.status === 404) {
+
+                    result.textContent = "Không tìm thấy sản phẩm";
+
+                    return;
+                }
+
+                if (!response.ok) {
+
+                    throw new Error("Không thể lấy thông tin sản phẩm");
+                }
+
+                const product = await response.json();
+
+                result.textContent =
+                    JSON.stringify(product, null, 2);
+
+            } catch (error) {
+
+                result.textContent = "Lỗi: " + error.message;
+
+            }
+
+        }
+
+    </script>
+
+</body>
+
+</html>
